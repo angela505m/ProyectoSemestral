@@ -10,7 +10,7 @@ class MascotaViewModel extends ChangeNotifier {
 
   String ubicacionActual = "Sin datos";
 
-  // URL de tu backend (reemplazar por la real)
+ 
   final String baseUrl = "http://192.168.1.17:3000";
 
   // OBTENER MASCOTAS DE UN USUARIO
@@ -66,7 +66,6 @@ class MascotaViewModel extends ChangeNotifier {
 
   // UBICACION
   Future<void> obtenerUbicacion() async {
-    // Tu código de Geolocator
   }
 
   // ========== NUEVOS MÉTODOS AGREGADOS ==========
