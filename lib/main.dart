@@ -3,8 +3,7 @@ import 'package:provider/provider.dart';
 import 'view/home_view.dart';
 import 'view/login_view.dart';
 import 'viewmodel/mascotaviewmodel.dart';
-import 'viewmodel/usuarioviewmodel.dart';
-import 'viewmodel/recordatorioviewmodel.dart';
+import 'viewmodel/usuarioviewmodel.dart'; // <-- nuevo
 
 void main() {
   runApp(const MyApp());
@@ -18,8 +17,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => MascotaViewModel()),
-        ChangeNotifierProvider(create: (_) => UsuarioViewModel()),
-        ChangeNotifierProvider(create: (_) => RecordatorioViewModel()),
+        ChangeNotifierProvider(create: (_) => UsuarioViewModel()), // <-- nuevo
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
