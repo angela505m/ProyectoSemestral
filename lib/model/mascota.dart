@@ -1,5 +1,5 @@
 class Mascota {
-  final String id; // id_mascota
+  final int id;
   final String nombre;
   final String tipo;
   final String? tipoOtro;
@@ -16,7 +16,7 @@ class Mascota {
   });
 
   factory Mascota.fromJson(Map<String, dynamic> json) => Mascota(
-        id: json['id_mascota'].toString(),
+        id: json['id_mascota'],
         nombre: json['nombre'],
         tipo: json['tipo'],
         tipoOtro: json['tipo_otro'],

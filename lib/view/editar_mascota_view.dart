@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodel/mascotaviewmodel.dart';
+import '../model/mascota.dart';
 
-class AgregarView extends StatefulWidget {
-  final int idUsuario;
-  final VoidCallback? onClose;
+class EditarMascotaView extends StatefulWidget {
+  final Mascota mascota;
+  final VoidCallback? onUpdate;
 
-  const AgregarView({super.key, required this.idUsuario, this.onClose});
+  const EditarMascotaView({super.key, required this.mascota, this.onUpdate});
 
   @override
-  State<AgregarView> createState() => _AgregarViewState();
+  State<EditarMascotaView> createState() => _EditarMascotaViewState();
 }
 
-class _AgregarViewState extends State<AgregarView> {
-  final TextEditingController controller = TextEditingController();
-  String selectedTipo = 'perro';
-  final TextEditingController tipoOtroController = TextEditingController();
-  final TextEditingController edadController = TextEditingController();
-  bool mostrarCampoOtro = false;
+class _EditarMascotaViewState extends State<EditarMascotaView> {
+  late TextEditingController _nombreController;
+  late String _selectedTipo;
+  late TextEditingController _tipoOtroController;
+  late TextEditingController _edadController;
+  bool _mostrarCampoOtro = false;
 
   final Map<String, IconData> tipoIconos = {
     'perro': Icons.pets,
@@ -25,6 +26,26 @@ class _AgregarViewState extends State<AgregarView> {
     'ave': Icons.flutter_dash,
     'otro': Icons.help_outline,
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _nombreController = TextEditingController(text: widget.mascota.nombre);
+    _selectedTipo = widget.mascota.tipo;
+    _tipoOtroController =
+        TextEditingController(text: widget.mascota.tipoOtro ?? '');
+    _edadController =
+        TextEditingController(text: widget.mascota.edad?.toString() ?? '');
+    _mostrarCampoOtro = (_selectedTipo == 'otro');
+  }
+
+  @override
+  void dispose() {
+    _nombreController.dispose();
+    _tipoOtroController.dispose();
+    _edadController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +56,7 @@ class _AgregarViewState extends State<AgregarView> {
       elevation: 8,
       insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
       child: SizedBox(
-        width: 500, // Ancho fijo más pequeño
+        width: 400,
         child: Container(
           padding: const EdgeInsets.all(30),
           decoration: BoxDecoration(
@@ -52,24 +73,21 @@ class _AgregarViewState extends State<AgregarView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Logo centrado
               Center(
-                child: Image.asset('assets/logo.png', height: 200),
+                child: Image.asset('assets/logo.png', height: 100),
               ),
-              const SizedBox(height: 5),
-              // Texto debajo del logo
+              const SizedBox(height: 10),
               const Text(
-                "Agregar mascota",
+                "Editar mascota",
                 style: TextStyle(
-                  fontSize: 25,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF96C9F2),
                 ),
               ),
-              const SizedBox(height: 25),
-              // Campo nombre
+              const SizedBox(height: 20),
               TextField(
-                controller: controller,
+                controller: _nombreController,
                 cursorColor: const Color(0xFF96C9F2),
                 decoration: InputDecoration(
                   labelText: "Nombre",
@@ -81,14 +99,12 @@ class _AgregarViewState extends State<AgregarView> {
                         const BorderSide(color: Color(0xFF96C9F2), width: 2),
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+                      borderRadius: BorderRadius.circular(20)),
                 ),
               ),
               const SizedBox(height: 15),
-              // Dropdown tipo (sin icono en el borde, solo en los items)
               DropdownButtonFormField<String>(
-                value: selectedTipo,
+                value: _selectedTipo,
                 decoration: InputDecoration(
                   labelText: "Tipo",
                   floatingLabelStyle: const TextStyle(color: Color(0xFF96C9F2)),
@@ -98,55 +114,50 @@ class _AgregarViewState extends State<AgregarView> {
                         const BorderSide(color: Color(0xFF96C9F2), width: 2),
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+                      borderRadius: BorderRadius.circular(20)),
                 ),
                 items: const [
                   DropdownMenuItem(
-                    value: 'perro',
-                    child: Row(children: [
-                      Icon(Icons.pets, color: Color(0xFF96C9F2)),
-                      SizedBox(width: 8),
-                      Text('Perro')
-                    ]),
-                  ),
+                      value: 'perro',
+                      child: Row(children: [
+                        Icon(Icons.pets, color: Color(0xFF96C9F2)),
+                        SizedBox(width: 8),
+                        Text('Perro')
+                      ])),
                   DropdownMenuItem(
-                    value: 'gato',
-                    child: Row(children: [
-                      Icon(Icons.pets, color: Color(0xFF96C9F2)),
-                      SizedBox(width: 8),
-                      Text('Gato')
-                    ]),
-                  ),
+                      value: 'gato',
+                      child: Row(children: [
+                        Icon(Icons.pets, color: Color(0xFF96C9F2)),
+                        SizedBox(width: 8),
+                        Text('Gato')
+                      ])),
                   DropdownMenuItem(
-                    value: 'ave',
-                    child: Row(children: [
-                      Icon(Icons.flutter_dash, color: Color(0xFF96C9F2)),
-                      SizedBox(width: 8),
-                      Text('Ave')
-                    ]),
-                  ),
+                      value: 'ave',
+                      child: Row(children: [
+                        Icon(Icons.flutter_dash, color: Color(0xFF96C9F2)),
+                        SizedBox(width: 8),
+                        Text('Ave')
+                      ])),
                   DropdownMenuItem(
-                    value: 'otro',
-                    child: Row(children: [
-                      Icon(Icons.help_outline, color: Color(0xFF96C9F2)),
-                      SizedBox(width: 8),
-                      Text('Otro')
-                    ]),
-                  ),
+                      value: 'otro',
+                      child: Row(children: [
+                        Icon(Icons.help_outline, color: Color(0xFF96C9F2)),
+                        SizedBox(width: 8),
+                        Text('Otro')
+                      ])),
                 ],
                 onChanged: (value) {
                   setState(() {
-                    selectedTipo = value!;
-                    mostrarCampoOtro = (value == 'otro');
-                    if (!mostrarCampoOtro) tipoOtroController.clear();
+                    _selectedTipo = value!;
+                    _mostrarCampoOtro = (value == 'otro');
+                    if (!_mostrarCampoOtro) _tipoOtroController.clear();
                   });
                 },
               ),
-              if (mostrarCampoOtro) ...[
+              if (_mostrarCampoOtro) ...[
                 const SizedBox(height: 15),
                 TextField(
-                  controller: tipoOtroController,
+                  controller: _tipoOtroController,
                   cursorColor: const Color(0xFF96C9F2),
                   decoration: InputDecoration(
                     labelText: "Especificar",
@@ -160,14 +171,13 @@ class _AgregarViewState extends State<AgregarView> {
                           const BorderSide(color: Color(0xFF96C9F2), width: 2),
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+                        borderRadius: BorderRadius.circular(20)),
                   ),
                 ),
               ],
               const SizedBox(height: 15),
               TextField(
-                controller: edadController,
+                controller: _edadController,
                 keyboardType: TextInputType.number,
                 cursorColor: const Color(0xFF96C9F2),
                 decoration: InputDecoration(
@@ -180,70 +190,56 @@ class _AgregarViewState extends State<AgregarView> {
                         const BorderSide(color: Color(0xFF96C9F2), width: 2),
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+                      borderRadius: BorderRadius.circular(20)),
                 ),
               ),
-              const SizedBox(height: 15),
-              // Botones centrados
+              const SizedBox(height: 25),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   TextButton(
-                    onPressed: () {
-                      if (widget.onClose != null) {
-                        widget.onClose!();
-                      } else {
-                        Navigator.pop(context);
-                      }
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.grey,
-                    ),
-                    child: const Text("Cancelar"),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("Cancelar",
+                        style: TextStyle(color: Colors.grey)),
                   ),
-                  const SizedBox(width: 25),
+                  const SizedBox(width: 20),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFB7E3F6),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                          borderRadius: BorderRadius.circular(20)),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 25, vertical: 15),
+                          horizontal: 20, vertical: 12),
                     ),
                     onPressed: () async {
-                      if (controller.text.isEmpty) {
+                      if (_nombreController.text.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                               content: Text("El nombre es obligatorio")),
                         );
                         return;
                       }
-                      if (selectedTipo == 'otro' &&
-                          tipoOtroController.text.isEmpty) {
+                      if (_selectedTipo == 'otro' &&
+                          _tipoOtroController.text.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Especifica el tipo")),
                         );
                         return;
                       }
-                      final edad = edadController.text.isNotEmpty
-                          ? int.tryParse(edadController.text)
+                      final edad = _edadController.text.isNotEmpty
+                          ? int.tryParse(_edadController.text)
                           : null;
-                      await vm.agregarMascota(
-                        controller.text,
-                        widget.idUsuario,
-                        tipo: selectedTipo,
-                        tipoOtro: selectedTipo == 'otro'
-                            ? tipoOtroController.text
+                      await vm.actualizarMascota(
+                        widget.mascota.id,
+                        _nombreController.text,
+                        _selectedTipo,
+                        _selectedTipo == 'otro'
+                            ? _tipoOtroController.text
                             : null,
-                        edad: edad,
+                        edad,
                       );
-                      if (widget.onClose != null) {
-                        widget.onClose!();
-                      } else {
-                        Navigator.pop(context);
-                      }
+                      Navigator.pop(context);
+                      widget.onUpdate?.call();
                     },
                     child: const Text("Guardar",
                         style: TextStyle(color: Colors.black87)),

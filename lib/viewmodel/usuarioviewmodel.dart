@@ -4,9 +4,8 @@ import 'dart:convert';
 
 class UsuarioViewModel extends ChangeNotifier {
   Map<String, dynamic>? usuario;
-  final String baseUrl = "http://192.168.1.17:3000";
+  final String baseUrl = "http://192.168.1.28:3000";
 
-  // LOGIN
   Future<String?> login(String email, String password) async {
     if (email.isEmpty || password.isEmpty) {
       return "Los campos no pueden estar vacíos";
@@ -22,7 +21,7 @@ class UsuarioViewModel extends ChangeNotifier {
       if (response.statusCode == 200) {
         usuario = json.decode(response.body);
         notifyListeners();
-        return null; // Éxito
+        return null;
       } else {
         return "Email o contraseña incorrectos";
       }
@@ -31,7 +30,6 @@ class UsuarioViewModel extends ChangeNotifier {
     }
   }
 
-  // CREAR CUENTA
   Future<String?> crearCuenta(
       String nombre, String email, String password) async {
     if (nombre.isEmpty || email.isEmpty || password.isEmpty) {
@@ -49,7 +47,7 @@ class UsuarioViewModel extends ChangeNotifier {
       if (response.statusCode == 201) {
         usuario = json.decode(response.body);
         notifyListeners();
-        return null; // Éxito
+        return null;
       } else {
         return "No se pudo crear la cuenta";
       }
@@ -58,29 +56,18 @@ class UsuarioViewModel extends ChangeNotifier {
     }
   }
 
-  // ========== NUEVOS MÉTODOS AGREGADOS ==========
-
-  // CERRAR SESIÓN
   void cerrarSesion() {
     usuario = null;
     notifyListeners();
   }
 
-  // VERIFICAR SI HAY USUARIO LOGUEADO
   bool get isLoggedIn => usuario != null;
 
-  // OBTENER ID DEL USUARIO LOGUEADO
-  int? get usuarioId {
-    return usuario?['id_usuario'];
-  }
+  int? get usuarioId => usuario?['id_usuario'];
 
-  // OBTENER NOMBRE DEL USUARIO LOGUEADO
-  String? get usuarioNombre {
-    return usuario?['nombre'];
-  }
+  String? get usuarioNombre => usuario?['nombre'];
 
-  // OBTENER EMAIL DEL USUARIO LOGUEADO
-  String? get usuarioEmail {
-    return usuario?['email'];
-  }
+  String? get usuarioEmail => usuario?['email'];
+
+  bool get esPremium => usuario?['es_premium'] == 1;
 }

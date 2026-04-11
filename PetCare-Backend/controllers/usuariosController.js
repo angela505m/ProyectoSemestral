@@ -2,15 +2,15 @@ const db = require('../db');
 
 const login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password } = req.body;  // ← el frontend envía "password"
         const [rows] = await db.query(
-            'SELECT id_usuario, nombre, email FROM usuario WHERE email = ? AND password = ?',
+            'SELECT id_usuario, nombre, email, es_premium FROM usuario WHERE email = ? AND contraseña = ?',
             [email, password]
         );
         if (rows.length === 0) {
             return res.status(401).json({ error: 'Email o contraseña incorrectos' });
         }
-        res.json(rows[0]); // { id_usuario, nombre, email }
+        res.json(rows[0]);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error en el servidor' });
@@ -19,12 +19,12 @@ const login = async (req, res) => {
 
 const registrar = async (req, res) => {
     try {
-        const { nombre, email, password } = req.body;
+        const { nombre, email, password } = req.body;  // ← el frontend envía "password"
         const [result] = await db.query(
-            'INSERT INTO usuario (nombre, email, password) VALUES (?, ?, ?)',
+            'INSERT INTO usuario (nombre, email, contraseña, es_premium) VALUES (?, ?, ?, false)',
             [nombre, email, password]
         );
-        res.status(201).json({ id_usuario: result.insertId, nombre, email });
+        res.status(201).json({ id_usuario: result.insertId, nombre, email, es_premium: false });
     } catch (error) {
         console.error(error);
         if (error.code === 'ER_DUP_ENTRY') {

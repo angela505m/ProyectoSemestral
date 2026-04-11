@@ -26,7 +26,6 @@ const agregarMascota = async (req, res) => {
             'INSERT INTO mascota (nombre, tipo, tipo_otro, edad, id_usuario) VALUES (?, ?, ?, ?, ?)',
             [nombre, tipo, tipo_otro || null, edad || null, id_usuario]
         );
-        // Devolvemos el objeto completo para que coincida con el modelo Flutter
         res.status(201).json({
             id_mascota: result.insertId,
             nombre,
@@ -53,4 +52,24 @@ const eliminarMascota = async (req, res) => {
     }
 };
 
-module.exports = { obtenerMascotas, agregarMascota, eliminarMascota };
+// Actualizar mascota (nueva función)
+const actualizarMascota = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { nombre, tipo, tipo_otro, edad } = req.body;
+        const [result] = await db.query(
+            'UPDATE mascota SET nombre = ?, tipo = ?, tipo_otro = ?, edad = ? WHERE id_mascota = ?',
+            [nombre, tipo, tipo_otro || null, edad || null, id]
+        );
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Mascota no encontrada' });
+        }
+        const [rows] = await db.query('SELECT * FROM mascota WHERE id_mascota = ?', [id]);
+        res.json(rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al actualizar mascota' });
+    }
+};
+
+module.exports = { obtenerMascotas, agregarMascota, eliminarMascota, actualizarMascota };
