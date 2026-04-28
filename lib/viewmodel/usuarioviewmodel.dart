@@ -4,7 +4,7 @@ import 'dart:convert';
 
 class UsuarioViewModel extends ChangeNotifier {
   Map<String, dynamic>? usuario;
-  final String baseUrl = "http://192.168.1.28:3000";
+  final String baseUrl = "http://192.168.1.43:3000";
 
   Future<String?> login(String email, String password) async {
     if (email.isEmpty || password.isEmpty) {

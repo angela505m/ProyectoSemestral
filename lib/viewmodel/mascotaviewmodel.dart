@@ -5,6 +5,7 @@ import '../model/paseo.dart';
 import '../model/ubicacion.dart';
 import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 
 class MascotaViewModel extends ChangeNotifier {
   final List<Mascota> _mascotas = [];
@@ -17,8 +18,10 @@ class MascotaViewModel extends ChangeNotifier {
 
   String ubicacionActual = "Sin datos";
   Paseo? paseoActivo;
+  LatLng? _currentPosition;
+  LatLng? get currentPosition => _currentPosition;
 
-  final String baseUrl = "http://192.168.1.28:3000";
+  final String baseUrl = "http://192.168.1.43:3000";
 
   Future<void> cargarMascotas(int idUsuario) async {
     final response =
@@ -68,7 +71,6 @@ class MascotaViewModel extends ChangeNotifier {
     }
   }
 
-  // Actualizar mascota (nuevo método)
   Future<void> actualizarMascota(
       int id, String nombre, String tipo, String? tipoOtro, int? edad) async {
     final mascota = {
@@ -102,6 +104,7 @@ class MascotaViewModel extends ChangeNotifier {
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       ubicacionActual = "Activa la ubicación del dispositivo";
+      _currentPosition = null;
       notifyListeners();
       return;
     }
@@ -111,6 +114,7 @@ class MascotaViewModel extends ChangeNotifier {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
         ubicacionActual = "Permiso denegado";
+        _currentPosition = null;
         notifyListeners();
         return;
       }
@@ -118,18 +122,22 @@ class MascotaViewModel extends ChangeNotifier {
 
     if (permission == LocationPermission.deniedForever) {
       ubicacionActual = "Permiso denegado permanentemente";
+      _currentPosition = null;
       notifyListeners();
       return;
     }
 
     final position = await Geolocator.getCurrentPosition();
+    final lat = position.latitude;
+    final lon = position.longitude;
+
     ubicacionActual =
-        "Lat: ${position.latitude.toStringAsFixed(6)}, Lon: ${position.longitude.toStringAsFixed(6)}";
+        "Lat: ${lat.toStringAsFixed(6)}, Lon: ${lon.toStringAsFixed(6)}";
+    _currentPosition = LatLng(lat, lon);
     notifyListeners();
 
     if (paseoActivo != null) {
-      await registrarUbicacionPaseo(
-          paseoActivo!.id, position.latitude, position.longitude);
+      await registrarUbicacionPaseo(paseoActivo!.id, lat, lon);
     }
   }
 
@@ -200,6 +208,7 @@ class MascotaViewModel extends ChangeNotifier {
     _paseos.clear();
     _ubicaciones.clear();
     paseoActivo = null;
+    _currentPosition = null;
     notifyListeners();
   }
 }

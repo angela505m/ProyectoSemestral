@@ -3,9 +3,13 @@ import 'package:provider/provider.dart';
 import 'view/home_view.dart';
 import 'view/login_view.dart';
 import 'viewmodel/mascotaviewmodel.dart';
-import 'viewmodel/usuarioviewmodel.dart'; // <-- nuevo
+import 'viewmodel/usuarioviewmodel.dart';
+import 'viewmodel/recordatorioviewmodel.dart';
+import 'services/notification_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService().init();
   runApp(const MyApp());
 }
 
@@ -17,7 +21,8 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => MascotaViewModel()),
-        ChangeNotifierProvider(create: (_) => UsuarioViewModel()), // <-- nuevo
+        ChangeNotifierProvider(create: (_) => UsuarioViewModel()),
+        ChangeNotifierProvider(create: (_) => RecordatorioViewModel()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

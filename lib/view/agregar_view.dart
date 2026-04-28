@@ -88,7 +88,7 @@ class _AgregarViewState extends State<AgregarView> {
               const SizedBox(height: 15),
               // Dropdown tipo (sin icono en el borde, solo en los items)
               DropdownButtonFormField<String>(
-                value: selectedTipo,
+                initialValue: selectedTipo,
                 decoration: InputDecoration(
                   labelText: "Tipo",
                   floatingLabelStyle: const TextStyle(color: Color(0xFF96C9F2)),

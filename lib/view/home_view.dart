@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../viewmodel/mascotaviewmodel.dart';
 import '../viewmodel/usuarioviewmodel.dart';
 import '../viewmodel/recordatorioviewmodel.dart';
@@ -7,9 +9,36 @@ import 'agregar_view.dart';
 import 'editar_mascota_view.dart';
 import 'editar_recordatorio_view.dart';
 import 'login_view.dart';
+import '../services/notification_service.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
+
+  // Muestra el diálogo de ayuda completo
+  void _mostrarDialogoAyuda(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title:
+            const Text('Recuerda', style: TextStyle(color: Color(0xFF96C9F2))),
+        content: const Text(
+          'Para que los recordatorios funcionen correctamente:\n\n'
+          '1. No cierres la app completamente.\n'
+          '2. Solo minimízala presionando el botón de inicio o el cuadrado/redondo.\n'
+          '3. Mantén la app en segundo plano.\n\n'
+          'Si la cierras completamente, los recordatorios no se activarán.\n\n'
+          '¡Gracias por usar PetCare!',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Entendido',
+                style: TextStyle(color: Color(0xFF96C9F2))),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +74,11 @@ class HomeView extends StatelessWidget {
               ),
             ),
           ),
+          // Botón de ayuda (información)
+          IconButton(
+            icon: const Icon(Icons.help_outline, color: Color(0xFF96C9F2)),
+            onPressed: () => _mostrarDialogoAyuda(context),
+          ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.redAccent),
             onPressed: () =>
@@ -54,7 +88,7 @@ class HomeView extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -64,70 +98,102 @@ class HomeView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(100),
                     child: Image.asset(
                       'assets/logo.png',
-                      height: 120,
-                      width: 120,
+                      height: 80,
+                      width: 80,
                       fit: BoxFit.cover,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Bienvenido, $nombreUsuario",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Bienvenido, $nombreUsuario",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const Text(
-                        "Cuida a tus amigos peludos",
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                    ],
+                        const Text(
+                          "Cuida a tus amigos peludos",
+                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 25),
-              _buildUbicacionCard(vm),
-              const SizedBox(height: 25),
+              const SizedBox(height: 20),
+              _buildUbicacionCard(context, vm),
+              const SizedBox(height: 20),
               if (vm.paseoActivo != null) _buildPaseoActivoCard(vm),
-              if (vm.paseoActivo != null) const SizedBox(height: 25),
+              const SizedBox(height: 20),
               _buildMascotasSection(
                   context, vm, recordatorioVM, usuarioVM.usuarioId!),
             ],
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.white,
-        child: const Icon(Icons.add, color: Color(0xFF96C9F2)),
-        onPressed: () {
-          final idUsuario = usuarioVM.usuarioId;
-          if (idUsuario != null) {
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return AgregarView(
-                  idUsuario: idUsuario,
-                  onClose: () {
-                    Navigator.pop(context);
-                    vm.cargarMascotas(idUsuario);
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Botón de prueba de notificación INMEDIATA (ROJO)
+          FloatingActionButton(
+            heroTag: "testNotification",
+            backgroundColor: Colors.red,
+            mini: true,
+            child: const Icon(Icons.notifications_active, color: Colors.white),
+            onPressed: () async {
+              final notificationService = NotificationService();
+              await notificationService.showTestNotification();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text(
+                        'Notificación enviada! Debería aparecer en segundos')),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          // Botón original para agregar mascota
+          FloatingActionButton(
+            heroTag: "addMascota",
+            backgroundColor: const Color(0xFFB7E3F6),
+            child: const Icon(Icons.add, color: Colors.black87),
+            onPressed: () {
+              final idUsuario = usuarioVM.usuarioId;
+              if (idUsuario != null) {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AgregarView(
+                      idUsuario: idUsuario,
+                      onClose: () {
+                        Navigator.pop(context);
+                        vm.cargarMascotas(idUsuario);
+                      },
+                    );
                   },
                 );
-              },
-            );
-          }
-        },
+              }
+            },
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildUbicacionCard(MascotaViewModel vm) {
+  // ------------------------------------------------------------
+  // El resto de métodos (_buildUbicacionCard, _mostrarSelectorMascota,
+  // _buildPaseoActivoCard, _buildMascotasSection, etc.)
+  // ------------------------------------------------------------
+
+  Widget _buildUbicacionCard(BuildContext context, MascotaViewModel vm) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
@@ -140,24 +206,136 @@ class HomeView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(children: [
-            Icon(Icons.location_on, color: Color(0xFF96C9F2)),
+            Icon(Icons.map, color: Color(0xFF96C9F2), size: 20),
             SizedBox(width: 8),
-            Text("Ubicación actual",
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            Text("Mapa de ubicación",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ]),
-          const SizedBox(height: 8),
-          Text(vm.ubicacionActual),
           const SizedBox(height: 12),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFB7E3F6),
-              foregroundColor: Colors.black87,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
+          SizedBox(
+            height: 220,
+            child: Consumer<MascotaViewModel>(
+              builder: (ctx, vm, _) {
+                final pos = vm.currentPosition;
+                if (pos == null) {
+                  return const Center(
+                    child:
+                        Text("Presiona 'Obtener ubicación' para ver el mapa"),
+                  );
+                }
+                return FlutterMap(
+                  options: MapOptions(
+                    initialCenter: pos,
+                    initialZoom: 15,
+                  ),
+                  children: [
+                    // ✅ URL CORREGIDA (CartoDB)
+                    TileLayer(
+                      urlTemplate:
+                          "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+                      subdomains: ['a', 'b', 'c'],
+                      userAgentPackageName: 'com.example.petcare',
+                    ),
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: pos,
+                          width: 40,
+                          height: 40,
+                          child: const Icon(Icons.person,
+                              color: Colors.blue, size: 35),
+                        ),
+                        Marker(
+                          point: LatLng(
+                              pos.latitude + 0.0001, pos.longitude + 0.0001),
+                          width: 40,
+                          height: 40,
+                          child: const Icon(Icons.pets,
+                              color: Colors.orange, size: 35),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
             ),
-            onPressed: vm.obtenerUbicacion,
-            icon: const Icon(Icons.gps_fixed),
-            label: const Text("Obtener ubicación"),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFB7E3F6),
+                    foregroundColor: Colors.black87,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                  ),
+                  onPressed: vm.obtenerUbicacion,
+                  icon: const Icon(Icons.gps_fixed),
+                  label: const Text("Obtener ubicación"),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFB7E3F6),
+                    foregroundColor: Colors.black87,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                  ),
+                  onPressed: vm.paseoActivo == null
+                      ? () => _mostrarSelectorMascota(context, vm)
+                      : null,
+                  icon: const Icon(Icons.directions_walk),
+                  label: const Text("Iniciar paseo"),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarSelectorMascota(BuildContext context, MascotaViewModel vm) {
+    if (vm.mascotas.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No tienes mascotas para pasear")),
+      );
+      return;
+    }
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        title: const Text("Seleccionar mascota"),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: vm.mascotas.length,
+            itemBuilder: (ctx, index) {
+              final m = vm.mascotas[index];
+              return ListTile(
+                leading: const Icon(Icons.pets, color: Color(0xFF96C9F2)),
+                title: Text(m.nombre),
+                subtitle: Text(m.tipo),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  vm.iniciarPaseo(m.id);
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child:
+                const Text("Cancelar", style: TextStyle(color: Colors.black87)),
           ),
         ],
       ),
@@ -167,7 +345,7 @@ class HomeView extends StatelessWidget {
   Widget _buildPaseoActivoCard(MascotaViewModel vm) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
@@ -190,8 +368,8 @@ class HomeView extends StatelessWidget {
           const SizedBox(height: 12),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
+              backgroundColor: const Color(0xFFB7E3F6),
+              foregroundColor: Colors.black87,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20)),
             ),
@@ -211,7 +389,7 @@ class HomeView extends StatelessWidget {
     int idUsuario,
   ) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
@@ -224,9 +402,10 @@ class HomeView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(children: [
-            Icon(Icons.pets, color: Color(0xFF96C9F2)),
+            Icon(Icons.pets, color: Color(0xFF96C9F2), size: 20),
             SizedBox(width: 8),
-            Text("Mis mascotas", style: TextStyle(fontWeight: FontWeight.bold)),
+            Text("Mis mascotas",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ]),
           const SizedBox(height: 10),
           if (vm.mascotas.isEmpty)
@@ -280,25 +459,9 @@ class HomeView extends StatelessWidget {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceEvenly,
                                 children: [
-                                  if (vm.paseoActivo == null)
-                                    ElevatedButton.icon(
-                                      onPressed: () => vm.iniciarPaseo(m.id),
-                                      icon: const Icon(Icons.directions_walk,
-                                          color: Colors.black87),
-                                      label: const Text("Iniciar paseo",
-                                          style:
-                                              TextStyle(color: Colors.black87)),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor:
-                                            const Color(0xFFB7E3F6),
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(20)),
-                                      ),
-                                    ),
                                   IconButton(
                                     icon: const Icon(Icons.edit,
-                                        color: Color(0xFF96C9F2)),
+                                        color: Colors.black87),
                                     onPressed: () {
                                       showDialog(
                                         context: context,
@@ -312,8 +475,9 @@ class HomeView extends StatelessWidget {
                                   ),
                                   IconButton(
                                     icon: const Icon(Icons.delete,
-                                        color: Colors.redAccent),
-                                    onPressed: () => vm.eliminarMascota(m.id),
+                                        color: Colors.black87),
+                                    onPressed: () => _confirmarEliminarMascota(
+                                        context, vm, m.id),
                                   ),
                                 ],
                               ),
@@ -327,15 +491,19 @@ class HomeView extends StatelessWidget {
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold)),
                                   const Spacer(),
-                                  TextButton.icon(
+                                  ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFB7E3F6),
+                                      foregroundColor: Colors.black87,
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(20)),
+                                    ),
                                     onPressed: () =>
                                         _mostrarDialogoRecordatorio(
                                             context, m.id, recordatorioVM),
-                                    icon: const Icon(Icons.add,
-                                        size: 18, color: Color(0xFF96C9F2)),
-                                    label: const Text("Agregar",
-                                        style: TextStyle(
-                                            color: Color(0xFF96C9F2))),
+                                    icon: const Icon(Icons.add, size: 18),
+                                    label: const Text("Agregar"),
                                   ),
                                 ],
                               ),
@@ -358,7 +526,37 @@ class HomeView extends StatelessWidget {
     );
   }
 
-  // Diálogo para NUEVO recordatorio (estilo idéntico al de edición)
+  void _confirmarEliminarMascota(
+      BuildContext context, MascotaViewModel vm, int idMascota) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Eliminar mascota"),
+        content:
+            const Text("¿Estás seguro de que deseas eliminar esta mascota?"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child:
+                const Text("Cancelar", style: TextStyle(color: Colors.black87)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFB7E3F6),
+              foregroundColor: Colors.black87,
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              vm.eliminarMascota(idMascota);
+            },
+            child: const Text("Eliminar"),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _mostrarDialogoRecordatorio(
       BuildContext context, int idMascota, RecordatorioViewModel vm) {
     String selectedTipo = 'comida';
@@ -376,131 +574,125 @@ class HomeView extends StatelessWidget {
               elevation: 8,
               insetPadding:
                   const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
-              child: SizedBox(
-                width: 400,
-                child: Container(
-                  padding: const EdgeInsets.all(30),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(50),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "Nuevo recordatorio",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF96C9F2),
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        "Nuevo recordatorio",
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF96C9F2),
+                    ),
+                    const SizedBox(height: 20),
+                    DropdownButtonFormField<String>(
+                      value: selectedTipo,
+                      decoration: const InputDecoration(
+                        labelText: "Tipo",
+                        labelStyle: TextStyle(color: Color(0xFF96C9F2)),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFF96C9F2)),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      DropdownButtonFormField<String>(
-                        value: selectedTipo,
-                        decoration: const InputDecoration(
-                          labelText: "Tipo",
-                          labelStyle: TextStyle(color: Color(0xFF96C9F2)),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFF96C9F2)),
-                          ),
+                      items: const [
+                        DropdownMenuItem(
+                            value: 'comida', child: Text('Comida')),
+                        DropdownMenuItem(value: 'paseo', child: Text('Paseo')),
+                        DropdownMenuItem(
+                            value: 'medicamento', child: Text('Medicamento')),
+                      ],
+                      onChanged: (v) => setState(() => selectedTipo = v!),
+                    ),
+                    const SizedBox(height: 12),
+                    ListTile(
+                      title: const Text("Hora"),
+                      subtitle: Text(selectedHora.format(context)),
+                      trailing: const Icon(Icons.access_time,
+                          color: Color(0xFF96C9F2)),
+                      onTap: () async {
+                        final picked = await showTimePicker(
+                          context: ctx,
+                          initialTime: selectedHora,
+                        );
+                        if (picked != null) {
+                          setState(() => selectedHora = picked);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: selectedDias,
+                      decoration: const InputDecoration(
+                        labelText: "Días",
+                        labelStyle: TextStyle(color: Color(0xFF96C9F2)),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFF96C9F2)),
                         ),
-                        items: const [
-                          DropdownMenuItem(
-                              value: 'comida', child: Text('Comida')),
-                          DropdownMenuItem(
-                              value: 'paseo', child: Text('Paseo')),
-                          DropdownMenuItem(
-                              value: 'medicamento', child: Text('Medicamento')),
-                        ],
-                        onChanged: (v) => setState(() => selectedTipo = v!),
                       ),
-                      const SizedBox(height: 15),
-                      ListTile(
-                        title: const Text("Hora"),
-                        subtitle: Text(selectedHora.format(context)),
-                        trailing: const Icon(Icons.access_time,
-                            color: Color(0xFF96C9F2)),
-                        onTap: () async {
-                          final picked = await showTimePicker(
-                            context: ctx,
-                            initialTime: selectedHora,
-                          );
-                          if (picked != null) {
-                            setState(() => selectedHora = picked);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      DropdownButtonFormField<String>(
-                        value: selectedDias,
-                        decoration: const InputDecoration(
-                          labelText: "Días",
-                          labelStyle: TextStyle(color: Color(0xFF96C9F2)),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFF96C9F2)),
-                          ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'Lunes,Martes,Miércoles,Jueves,Viernes',
+                          child: Text('Lun a Vie'),
                         ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'Lunes,Martes,Miércoles,Jueves,Viernes',
-                            child: Text('Lun a Vie'),
+                        DropdownMenuItem(
+                          value:
+                              'Lunes,Martes,Miércoles,Jueves,Viernes,Sábado,Domingo',
+                          child: Text('Todos los días'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Sábado,Domingo',
+                          child: Text('Solo fines de semana'),
+                        ),
+                      ],
+                      onChanged: (v) => setState(() => selectedDias = v!),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFB7E3F6),
+                            foregroundColor: Colors.black87,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20)),
                           ),
-                          DropdownMenuItem(
-                            value:
-                                'Lunes,Martes,Miércoles,Jueves,Viernes,Sábado,Domingo',
-                            child: Text('Todos los días'),
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text("Cancelar"),
+                        ),
+                        const SizedBox(width: 20),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFB7E3F6),
+                            foregroundColor: Colors.black87,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
                           ),
-                          DropdownMenuItem(
-                            value: 'Sábado,Domingo',
-                            child: Text('Solo fines de semana'),
-                          ),
-                        ],
-                        onChanged: (v) => setState(() => selectedDias = v!),
-                      ),
-                      const SizedBox(height: 25),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: const Text("Cancelar",
-                                style: TextStyle(color: Colors.grey)),
-                          ),
-                          const SizedBox(width: 20),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFB7E3F6),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20)),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 12),
-                            ),
-                            onPressed: () {
-                              final novaHora =
-                                  '${selectedHora.hour.toString().padLeft(2, '0')}:${selectedHora.minute.toString().padLeft(2, '0')}:00';
-                              vm.agregarRecordatorio(
-                                idMascota,
-                                selectedTipo,
-                                novaHora,
-                                selectedDias,
-                              );
-                              Navigator.pop(ctx);
-                            },
-                            child: const Text("Guardar",
-                                style: TextStyle(color: Colors.black87)),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                          onPressed: () {
+                            final novaHora =
+                                '${selectedHora.hour.toString().padLeft(2, '0')}:${selectedHora.minute.toString().padLeft(2, '0')}:00';
+                            vm.agregarRecordatorio(
+                              idMascota,
+                              selectedTipo,
+                              novaHora,
+                              selectedDias,
+                            );
+                            Navigator.pop(ctx);
+                          },
+                          child: const Text("Guardar"),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             );
@@ -520,11 +712,21 @@ class HomeView extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: const Text("Cerrar sesión"),
         content: const Text("¿Estás seguro?"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text("Cancelar")),
-          TextButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFB7E3F6),
+              foregroundColor: Colors.black87,
+            ),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFB7E3F6),
+              foregroundColor: Colors.black87,
+            ),
             onPressed: () {
               usuarioVM.cerrarSesion();
               Provider.of<MascotaViewModel>(context, listen: false)
@@ -536,7 +738,6 @@ class HomeView extends StatelessWidget {
                 (route) => false,
               );
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text("Cerrar sesión"),
           ),
         ],
@@ -545,7 +746,9 @@ class HomeView extends StatelessWidget {
   }
 }
 
-// Widget separado para los recordatorios (con botón de editar)
+// ------------------------------------------------------------
+// Widget _RecordatoriosList (sin cambios)
+// ------------------------------------------------------------
 class _RecordatoriosList extends StatefulWidget {
   final int idMascota;
   final RecordatorioViewModel recordatorioVM;
@@ -569,6 +772,37 @@ class _RecordatoriosListState extends State<_RecordatoriosList> {
   Future<void> _cargar() async {
     await widget.recordatorioVM.cargarRecordatoriosPorMascota(widget.idMascota);
     if (mounted) setState(() => _cargado = true);
+  }
+
+  void _confirmarEliminarRecordatorio(int idRecordatorio) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Eliminar recordatorio"),
+        content: const Text(
+            "¿Estás seguro de que deseas eliminar este recordatorio?"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child:
+                const Text("Cancelar", style: TextStyle(color: Colors.black87)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFB7E3F6),
+              foregroundColor: Colors.black87,
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              widget.recordatorioVM
+                  .eliminarRecordatorio(widget.idMascota, idRecordatorio);
+            },
+            child: const Text("Eliminar"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -639,8 +873,8 @@ class _RecordatoriosListState extends State<_RecordatoriosList> {
                   ),
                   const SizedBox(width: 4),
                   IconButton(
-                    icon: const Icon(Icons.edit,
-                        size: 24, color: Color(0xFF96C9F2)),
+                    icon:
+                        const Icon(Icons.edit, size: 24, color: Colors.black87),
                     onPressed: () {
                       showDialog(
                         context: context,
@@ -657,9 +891,8 @@ class _RecordatoriosListState extends State<_RecordatoriosList> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete,
-                        size: 28, color: Colors.redAccent),
-                    onPressed: () => widget.recordatorioVM
-                        .eliminarRecordatorio(widget.idMascota, r.id),
+                        size: 28, color: Colors.black87),
+                    onPressed: () => _confirmarEliminarRecordatorio(r.id),
                     padding: const EdgeInsets.all(4),
                     constraints:
                         const BoxConstraints(minWidth: 40, minHeight: 40),

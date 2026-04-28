@@ -104,7 +104,7 @@ class _EditarMascotaViewState extends State<EditarMascotaView> {
               ),
               const SizedBox(height: 15),
               DropdownButtonFormField<String>(
-                value: _selectedTipo,
+                initialValue: _selectedTipo,
                 decoration: InputDecoration(
                   labelText: "Tipo",
                   floatingLabelStyle: const TextStyle(color: Color(0xFF96C9F2)),

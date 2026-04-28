@@ -69,7 +69,7 @@ class _EditarRecordatorioViewState extends State<EditarRecordatorioView> {
               ),
               const SizedBox(height: 20),
               DropdownButtonFormField<String>(
-                value: _selectedTipo,
+                initialValue: _selectedTipo,
                 decoration: const InputDecoration(
                   labelText: "Tipo",
                   labelStyle: TextStyle(color: Color(0xFF96C9F2)),
@@ -103,7 +103,7 @@ class _EditarRecordatorioViewState extends State<EditarRecordatorioView> {
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
-                value: _selectedDias,
+                initialValue: _selectedDias,
                 decoration: const InputDecoration(
                   labelText: "Días",
                   labelStyle: TextStyle(color: Color(0xFF96C9F2)),
