@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -19,6 +20,23 @@ class NotificationService {
       iOS: iosSettings,
     );
     await _flutterLocalNotificationsPlugin.initialize(settings);
+  }
+
+  // Solicitar permiso de notificaciones (usando permission_handler)
+  Future<bool> requestPermission() async {
+    // Para Android 13+, solicita POST_NOTIFICATIONS
+    final status = await Permission.notification.request();
+    if (status.isGranted) {
+      return true;
+    } else if (status.isDenied) {
+      // El usuario denegó, podemos mostrar un mensaje
+      return false;
+    } else if (status.isPermanentlyDenied) {
+      // El usuario denegó permanentemente, hay que abrir ajustes
+      openAppSettings();
+      return false;
+    }
+    return false;
   }
 
   // Notificación inmediata (para prueba)

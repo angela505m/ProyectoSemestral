@@ -2,22 +2,32 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../model/recordatorio.dart';
 import '../services/notification_service.dart';
 
 class RecordatorioViewModel extends ChangeNotifier {
   final Map<int, List<Recordatorio>> _recordatoriosPorMascota = {};
   final NotificationService _notifications = NotificationService();
-  final Map<int, Timer> _timers =
-      {}; // Guarda los timers activos por id de recordatorio
+  final Map<int, Timer> _timers = {}; // Timers activos por id de recordatorio
 
   List<Recordatorio> getRecordatorios(int idMascota) {
     return _recordatoriosPorMascota[idMascota] ?? [];
   }
 
-  final String baseUrl = "http://192.168.1.43:3000"; // tu IP
+  final String baseUrl = "http://192.168.1.9:3000";
 
+  // ------------------------------------------------------------------
+  // Preferencia global de notificaciones (SharedPreferences)
+  // ------------------------------------------------------------------
+  Future<bool> _notificacionesGlobalActivadas() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('notificaciones_global') ?? true;
+  }
+
+  // ------------------------------------------------------------------
   // Convierte días en español a inglés
+  // ------------------------------------------------------------------
   List<String> _diasStringToList(String dias) {
     final mapDias = {
       'Lunes': 'Monday',
@@ -59,8 +69,13 @@ class RecordatorioViewModel extends ChangeNotifier {
     }
   }
 
-  // Programa un Timer para el próximo día/hora que coincida con los días seleccionados
+  // ------------------------------------------------------------------
+  // Programa un Timer para el próximo día/hora que coincida con los días
+  // ------------------------------------------------------------------
   Future<void> _scheduleRecordatorio(Recordatorio r) async {
+    // 🔥 SI LAS NOTIFICACIONES GLOBALES ESTÁN DESACTIVADAS, NO PROGRAMAMOS NADA
+    if (!(await _notificacionesGlobalActivadas())) return;
+
     if (!r.activo) return;
 
     // Cancelar timer anterior si existe
@@ -109,8 +124,6 @@ class RecordatorioViewModel extends ChangeNotifier {
         title: 'Recordatorio de ${r.tipo}',
         body: 'Es hora de ${r.tipo} para tu mascota',
       );
-      // Opcional: reprogramar para la siguiente semana si es recurrente
-      // (para mantener la recurrencia mientras la app esté abierta)
       _reprogramarSiguienteSemana(r);
     });
     _timers[r.id] = timer;
@@ -119,11 +132,6 @@ class RecordatorioViewModel extends ChangeNotifier {
   // Reprograma el mismo recordatorio para la próxima semana
   void _reprogramarSiguienteSemana(Recordatorio r) {
     if (!r.activo) return;
-    // Creamos una copia con la misma información, pero el Timer se volverá a llamar
-    // después de 7 días. Para simplificar, simplemente volvemos a programar sumando 7 días.
-    // Usamos un nuevo Timer que se ejecute dentro de 7 días.
-    // Nota: Esto solo funciona si la app sigue ejecutándose. Si se cierra, se pierde.
-    // Para una solución más robusta, habría que guardar la próxima fecha en SharedPreferences.
     final now = DateTime.now();
     final horaParts = r.hora.split(':');
     final targetTime = TimeOfDay(
@@ -145,7 +153,7 @@ class RecordatorioViewModel extends ChangeNotifier {
           title: 'Recordatorio de ${r.tipo}',
           body: 'Es hora de ${r.tipo} para tu mascota',
         );
-        _reprogramarSiguienteSemana(r); // recursivo para que siga cada semana
+        _reprogramarSiguienteSemana(r);
       });
       _timers[r.id] = timer;
     }
@@ -159,7 +167,40 @@ class RecordatorioViewModel extends ChangeNotifier {
     await _notifications.cancel(id);
   }
 
+  // ------------------------------------------------------------------
+  // 🆕 Método público para actualizar el estado global de notificaciones
+  //    (debe ser llamado desde ConfiguracionView cuando se cambie el switch)
+  // ------------------------------------------------------------------
+  Future<void> actualizarEstadoGlobal() async {
+    final globalActivo = await _notificacionesGlobalActivadas();
+    if (!globalActivo) {
+      // Si se desactivaron globalmente, cancelamos todos los timers
+      for (var timer in _timers.values) {
+        timer.cancel();
+      }
+      _timers.clear();
+      // También cancelamos las notificaciones locales pendientes
+      for (var lista in _recordatoriosPorMascota.values) {
+        for (var r in lista) {
+          await _notifications.cancel(r.id);
+        }
+      }
+    } else {
+      // Si se activaron globalmente, reprogramamos todos los recordatorios activos
+      for (var lista in _recordatoriosPorMascota.values) {
+        for (var r in lista) {
+          if (r.activo) {
+            await _scheduleRecordatorio(r);
+          }
+        }
+      }
+    }
+    notifyListeners();
+  }
+
+  // ------------------------------------------------------------------
   // Cargar recordatorios desde el backend y programar los activos
+  // ------------------------------------------------------------------
   Future<void> cargarRecordatoriosPorMascota(int idMascota) async {
     try {
       final response = await http
@@ -258,7 +299,6 @@ class RecordatorioViewModel extends ChangeNotifier {
       if (lista != null) {
         final index = lista.indexWhere((r) => r.id == idRecordatorio);
         if (index != -1) {
-          final prevActivo = lista[index].activo;
           lista[index] = actualizado;
           _recordatoriosPorMascota[idMascota] = lista;
           await _cancelRecordatorio(idRecordatorio);
@@ -288,7 +328,6 @@ class RecordatorioViewModel extends ChangeNotifier {
   }
 
   void limpiarRecordatorios() {
-    // Cancelar todos los timers al cerrar sesión
     for (var timer in _timers.values) {
       timer.cancel();
     }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import '../model/mascota.dart';
@@ -21,7 +22,10 @@ class MascotaViewModel extends ChangeNotifier {
   LatLng? _currentPosition;
   LatLng? get currentPosition => _currentPosition;
 
-  final String baseUrl = "http://192.168.1.43:3000";
+  // 🟢 Timer para el registro automático de ubicación durante el paseo
+  Timer? _ubicacionTimer;
+
+  final String baseUrl = "http://192.168.1.9:3000";
 
   Future<void> cargarMascotas(int idUsuario) async {
     final response =
@@ -97,6 +101,9 @@ class MascotaViewModel extends ChangeNotifier {
     }
   }
 
+  // --------------------------------------------------------------
+  // 🟢 OBTENER UBICACIÓN MANUAL (también actualiza la posición para el mapa)
+  // --------------------------------------------------------------
   Future<void> obtenerUbicacion() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -136,11 +143,15 @@ class MascotaViewModel extends ChangeNotifier {
     _currentPosition = LatLng(lat, lon);
     notifyListeners();
 
+    // Si hay un paseo activo, registra también la ubicación en ese momento
     if (paseoActivo != null) {
       await registrarUbicacionPaseo(paseoActivo!.id, lat, lon);
     }
   }
 
+  // --------------------------------------------------------------
+  // 🟢 INICIAR PASEO (con registro automático cada 10 segundos)
+  // --------------------------------------------------------------
   Future<void> iniciarPaseo(int idMascota) async {
     final now = DateTime.now();
     final paseo = {
@@ -159,11 +170,20 @@ class MascotaViewModel extends ChangeNotifier {
     if (response.statusCode == 201) {
       paseoActivo = Paseo.fromJson(json.decode(response.body));
       notifyListeners();
+
+      // 🔁 Arrancar el registro automático de ubicación
+      _iniciarRegistroAutomatico();
     }
   }
 
+  // --------------------------------------------------------------
+  // 🟢 FINALIZAR PASEO (detiene el registro automático)
+  // --------------------------------------------------------------
   Future<void> finalizarPaseo() async {
     if (paseoActivo == null) return;
+
+    // 🛑 Detener el timer automático
+    _detenerRegistroAutomatico();
 
     final now = DateTime.now();
     final duracion =
@@ -184,6 +204,9 @@ class MascotaViewModel extends ChangeNotifier {
     }
   }
 
+  // --------------------------------------------------------------
+  // 🟢 REGISTRAR UBICACIÓN (manual o automática)
+  // --------------------------------------------------------------
   Future<void> registrarUbicacionPaseo(
       int idPaseo, double lat, double lon) async {
     final ubicacion = {
@@ -203,7 +226,56 @@ class MascotaViewModel extends ChangeNotifier {
     );
   }
 
+  // --------------------------------------------------------------
+  // 🟢 MÉTODOS PRIVADOS PARA EL REGISTRO AUTOMÁTICO
+  // --------------------------------------------------------------
+  void _iniciarRegistroAutomatico() {
+    _ubicacionTimer?.cancel(); // por si acaso
+    _ubicacionTimer =
+        Timer.periodic(const Duration(seconds: 10), (timer) async {
+      if (paseoActivo == null) {
+        // Si ya no hay paseo activo, nos detenemos
+        timer.cancel();
+        _ubicacionTimer = null;
+        return;
+      }
+
+      // Verificar permisos de ubicación
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission != LocationPermission.always &&
+          permission != LocationPermission.whileInUse) return;
+
+      try {
+        final position = await Geolocator.getCurrentPosition();
+        await registrarUbicacionPaseo(
+          paseoActivo!.id,
+          position.latitude,
+          position.longitude,
+        );
+
+        // También actualizamos el texto de ubicación actual en la UI
+        ubicacionActual =
+            "Paseo en curso - Lat: ${position.latitude.toStringAsFixed(6)}, Lon: ${position.longitude.toStringAsFixed(6)}";
+        notifyListeners();
+      } catch (e) {
+        print("Error registrando ubicación automática: $e");
+      }
+    });
+  }
+
+  void _detenerRegistroAutomatico() {
+    _ubicacionTimer?.cancel();
+    _ubicacionTimer = null;
+  }
+
+  // --------------------------------------------------------------
+  // 🟢 LIMPIAR (cierra sesión)
+  // --------------------------------------------------------------
   void limpiarMascotas() {
+    _detenerRegistroAutomatico(); // asegurar que el timer se detenga
     _mascotas.clear();
     _paseos.clear();
     _ubicaciones.clear();

@@ -4,7 +4,8 @@ import 'dart:convert';
 
 class UsuarioViewModel extends ChangeNotifier {
   Map<String, dynamic>? usuario;
-  final String baseUrl = "http://192.168.1.43:3000";
+
+  final String baseUrl = "http://192.168.1.9:3000";
 
   Future<String?> login(String email, String password) async {
     if (email.isEmpty || password.isEmpty) {
@@ -59,6 +60,36 @@ class UsuarioViewModel extends ChangeNotifier {
   void cerrarSesion() {
     usuario = null;
     notifyListeners();
+  }
+
+  Future<String?> actualizarPerfil(String nombre, String email) async {
+    if (nombre.isEmpty || email.isEmpty) {
+      return "Los campos no pueden estar vacíos";
+    }
+
+    final userId = usuarioId;
+    if (userId == null) return "Usuario no identificado";
+
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/usuarios/$userId'),
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({"nombre": nombre, "email": email}),
+      );
+
+      if (response.statusCode == 200) {
+        // Actualizar datos locales
+        usuario?['nombre'] = nombre;
+        usuario?['email'] = email;
+        notifyListeners();
+        return null;
+      } else {
+        final error = json.decode(response.body);
+        return error['error'] ?? "Error al actualizar perfil";
+      }
+    } catch (e) {
+      return "Error de conexión";
+    }
   }
 
   bool get isLoggedIn => usuario != null;

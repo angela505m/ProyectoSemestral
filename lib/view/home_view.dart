@@ -9,12 +9,12 @@ import 'agregar_view.dart';
 import 'editar_mascota_view.dart';
 import 'editar_recordatorio_view.dart';
 import 'login_view.dart';
+import 'configuracion_view.dart';
 import '../services/notification_service.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
 
-  // Muestra el diálogo de ayuda completo
   void _mostrarDialogoAyuda(BuildContext context) {
     showDialog(
       context: context,
@@ -40,10 +40,19 @@ class HomeView extends StatelessWidget {
     );
   }
 
+  // ✅ Pantalla de configuración como ruta independiente (sin parámetros)
+  void _mostrarConfiguracion(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ConfiguracionView()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final vm = Provider.of<MascotaViewModel>(context);
-    final usuarioVM = Provider.of<UsuarioViewModel>(context, listen: false);
+    // Escuchar cambios en UsuarioViewModel para actualizar el nombre en la AppBar
+    final usuarioVM = Provider.of<UsuarioViewModel>(context);
     final recordatorioVM = Provider.of<RecordatorioViewModel>(context);
     final String nombreUsuario = usuarioVM.usuarioNombre ?? '';
 
@@ -74,10 +83,15 @@ class HomeView extends StatelessWidget {
               ),
             ),
           ),
-          // Botón de ayuda (información)
+          // Botón de ayuda
           IconButton(
             icon: const Icon(Icons.help_outline, color: Color(0xFF96C9F2)),
             onPressed: () => _mostrarDialogoAyuda(context),
+          ),
+          // Botón de configuración
+          IconButton(
+            icon: const Icon(Icons.settings, color: Color(0xFF96C9F2)),
+            onPressed: () => _mostrarConfiguracion(context),
           ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.redAccent),
@@ -151,8 +165,9 @@ class HomeView extends StatelessWidget {
               await notificationService.showTestNotification();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                    content: Text(
-                        'Notificación enviada! Debería aparecer en segundos')),
+                  content: Text(
+                      'Notificación enviada! Debería aparecer en segundos'),
+                ),
               );
             },
           ),
@@ -186,10 +201,9 @@ class HomeView extends StatelessWidget {
   }
 
   // ------------------------------------------------------------
-  // El resto de métodos (_buildUbicacionCard, _mostrarSelectorMascota,
+  // Métodos existentes ( _buildUbicacionCard, _mostrarSelectorMascota,
   // _buildPaseoActivoCard, _buildMascotasSection, etc.)
   // ------------------------------------------------------------
-
   Widget _buildUbicacionCard(BuildContext context, MascotaViewModel vm) {
     return Container(
       width: double.infinity,
@@ -229,7 +243,6 @@ class HomeView extends StatelessWidget {
                     initialZoom: 15,
                   ),
                   children: [
-                    // ✅ URL CORREGIDA (CartoDB)
                     TileLayer(
                       urlTemplate:
                           "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
@@ -586,10 +599,9 @@ class HomeView extends StatelessWidget {
                     const Text(
                       "Nuevo recordatorio",
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF96C9F2),
-                      ),
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF96C9F2)),
                     ),
                     const SizedBox(height: 20),
                     DropdownButtonFormField<String>(
